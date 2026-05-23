@@ -1,0 +1,937 @@
+/**
+ * Sign Up Screen (View)
+ * MVVM Pattern: Screen/View contains only UI logic
+ * Business logic is delegated to ViewModel
+ * Single-step signup flow with EditProfileScreen-style UI
+ */
+
+import React, { useState } from 'react';
+import {
+  View,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  SafeAreaView,
+  Alert,
+  Image,
+  Modal,
+  FlatList,
+  ActivityIndicator,
+} from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
+import AppText from '../../components/common/AppText';
+import SignUpViewModel from './SignUpViewModel';
+import styles from './signupStyles';
+import { useAppContext } from '../../store/AppContext';
+import COLORS from '../../config/colors';
+import FONTS from '../../config/fonts';
+
+/**
+ * Sign Up Screen Component
+ * Handles user registration with two-step process
+ * @param {object} navigation - React Navigation prop
+ */
+const SignUpScreen = ({ navigation }) => {
+  // Get ViewModel (business logic)
+  const viewModel = SignUpViewModel();
+
+  // Get app context for authentication
+  const { signIn } = useAppContext();
+
+  // Language dropdown state
+  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+  const [showGradeDropdown, setShowGradeDropdown] = useState(false);
+  const [showBoardDropdown, setShowBoardDropdown] = useState(false);
+  const [showStateDropdown, setShowStateDropdown] = useState(false);
+  const [showDistrictDropdown, setShowDistrictDropdown] = useState(false);
+
+  // Destructure ViewModel state and actions
+  const {
+    // Step 1
+    email,
+    password,
+    language,
+    mobileNumber,
+    termsAccepted,
+    showPassword,
+    // Step 2
+    name,
+    dateOfBirth,
+    schoolName,
+    grade,
+    gradeId,
+    board,
+    state,
+    stateId,
+    district,
+    districtId,
+    // Metadata
+    grades,
+    boards,
+    states,
+    districts,
+    languages,
+    isLoadingMeta,
+    isLoadingDistricts,
+    // UI
+    isLoading,
+    errors,
+    currentStep,
+    // Actions
+    setEmail,
+    setPassword,
+    setLanguage,
+    setMobileNumber,
+    setTermsAccepted,
+    setName,
+    setDateOfBirth,
+    setSchoolName,
+    setGrade,
+    setGradeId,
+    setBoard,
+    setState,
+    setStateId,
+    setDistrict,
+    setDistrictId,
+    toggleShowPassword,
+    handleNextStep,
+    handleBackStep,
+    handleSignUp,
+  } = viewModel;
+
+  /**
+   * Handle sign up completion
+   */
+  const onSignUpPress = async () => {
+    const result = await handleSignUp();
+
+    if (result?.error) {
+      Alert.alert('Sign Up Error', result.errorMessage, [{ text: 'OK' }]);
+      return;
+    }
+
+    if (result?.success && result?.user) {
+      // Show success message and navigate to login
+      Alert.alert(
+        'Account Created',
+        'Your account has been created successfully. Please log in with your email and password.',
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.navigate('Login'),
+          },
+        ]
+      );
+    }
+  };
+
+  /**
+   * Navigate to login screen
+   */
+  const onLoginPress = () => {
+    navigation.goBack();
+  };
+
+  /**
+   * Handle back button press
+   */
+  const onBackPress = () => {
+    navigation.goBack();
+  };
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <View style={{ flex: 1, backgroundColor: '#f3f4f6' }}>
+        {/* Standard Header */}
+        <View style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingHorizontal: 16,
+          paddingVertical: 12,
+          gap: 12,
+          backgroundColor: '#ffffff',
+          borderBottomWidth: 1,
+          borderBottomColor: '#f3f4f6',
+        }}>
+          <TouchableOpacity
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: '#eef2ff',
+              justifyContent: 'center',
+              alignItems: 'center',
+              flexShrink: 0,
+            }}
+            onPress={onBackPress}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Image
+              source={require('../../assets/icons/back-arrow.png')}
+              style={{
+                width: 18,
+                height: 18,
+                resizeMode: 'contain',
+                tintColor: '#4f46e5',
+              }}
+            />
+          </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <AppText style={{
+              fontSize: 16,
+              fontWeight: '700',
+              fontFamily: FONTS.FAMILY.BOLD,
+              color: COLORS.TEXT_PRIMARY,
+              marginBottom: 2,
+              lineHeight: 20,
+            }}>Sign Up</AppText>
+            <AppText style={{
+              fontSize: 12,
+              fontFamily: FONTS.FAMILY.REGULAR,
+              color: COLORS.TEXT_DISABLED,
+              lineHeight: 16,
+            }}>Create your account</AppText>
+          </View>
+        </View>
+
+        {/* Form Content */}
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: 32 }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={{
+            marginHorizontal: 16,
+            marginTop: 16,
+            marginBottom: 20,
+            backgroundColor: '#ffffff',
+            borderRadius: 12,
+            overflow: 'hidden',
+            paddingHorizontal: 16,
+            paddingVertical: 16,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.04,
+            shadowRadius: 6,
+            elevation: 1,
+            borderWidth: 1,
+            borderColor: '#f3f4f6',
+          }}>
+            {/* ACCOUNT INFORMATION SECTION */}
+            <AppText style={{
+              fontSize: 10,
+              fontWeight: '700',
+              fontFamily: FONTS.FAMILY.BOLD,
+              color: '#9ca3af',
+              letterSpacing: 1,
+              textTransform: 'uppercase',
+              marginBottom: 14,
+            }}>
+              Account Information
+            </AppText>
+                {/* Full Name Input */}
+                <View style={styles.inputGroup}>
+                  <AppText variant="body" font="semiBold" style={styles.label}>
+                    Full Name <AppText style={{color: LoginColors.textError}}>*</AppText>
+                  </AppText>
+                  <View style={styles.inputContainer}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Enter your full name"
+                      placeholderTextColor={LoginColors.textTertiary}
+                      value={name}
+                      onChangeText={setName}
+                      editable={!isLoading}
+                    />
+                  </View>
+                  {errors.name && (
+                    <AppText
+                      color="Error"
+                      variant="small"
+                      style={styles.errorText}
+                    >
+                      {errors.name}
+                    </AppText>
+                  )}
+                </View>
+
+                {/* Email Input */}
+                <View style={styles.inputGroup}>
+                  <AppText variant="body" font="semiBold" style={styles.label}>
+                    Email Address <AppText style={{color: LoginColors.textError}}>*</AppText>
+                  </AppText>
+                  <View style={styles.inputContainer}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="name@example.com"
+                      placeholderTextColor={LoginColors.textTertiary}
+                      value={email}
+                      onChangeText={setEmail}
+                      editable={!isLoading}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                    />
+                    <Image
+                      source={require('../../assets/icons/email.png')}
+                      style={styles.iconImage}
+                    />
+                  </View>
+                  {errors.email && (
+                    <AppText
+                      color="Error"
+                      variant="small"
+                      style={styles.errorText}
+                    >
+                      {errors.email}
+                    </AppText>
+                  )}
+                </View>
+
+                {/* Mobile Number Input */}
+                <View style={styles.inputGroup}>
+                  <AppText variant="body" font="semiBold" style={styles.label}>
+                    Mobile Number
+                  </AppText>
+                  <View style={styles.inputContainer}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="+91 98765 43210"
+                      placeholderTextColor={LoginColors.textTertiary}
+                      value={mobileNumber}
+                      onChangeText={setMobileNumber}
+                      editable={!isLoading}
+                      keyboardType="phone-pad"
+                    />
+                    <Image
+                      source={require('../../assets/icons/phone.png')}
+                      style={styles.iconImage}
+                    />
+                  </View>
+                  {errors.mobileNumber && (
+                    <AppText
+                      color="Error"
+                      variant="small"
+                      style={styles.errorText}
+                    >
+                      {errors.mobileNumber}
+                    </AppText>
+                  )}
+                </View>
+
+                {/* Password Input */}
+                <View style={styles.inputGroup}>
+                  <AppText variant="body" font="semiBold" style={styles.label}>
+                    Password <AppText style={{color: LoginColors.textError}}>*</AppText>
+                  </AppText>
+                  <View style={styles.inputContainer}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Enter your password"
+                      placeholderTextColor={LoginColors.textTertiary}
+                      value={password}
+                      onChangeText={setPassword}
+                      editable={!isLoading}
+                      secureTextEntry={!showPassword}
+                    />
+                    <TouchableOpacity
+                      style={styles.eyeIconContainer}
+                      onPress={toggleShowPassword}
+                      disabled={isLoading}
+                    >
+                      <Image
+                        source={
+                          showPassword
+                            ? require('../../assets/icons/eye.png')
+                            : require('../../assets/icons/hidden.png')
+                        }
+                        style={styles.iconImage}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  {errors.password && (
+                    <AppText
+                      color="Error"
+                      variant="small"
+                      style={styles.errorText}
+                    >
+                      {errors.password}
+                    </AppText>
+                  )}
+                </View>
+              </View>
+            </>
+          )}
+
+          {/* Step 2: Profile Details */}
+          {currentStep === 2 && (
+            <>
+              <View style={styles.headerSection}>
+                <AppText style={styles.mainTitle}>Profile Details</AppText>
+                <AppText
+                  variant="subtitle"
+                  color="Secondary"
+                  style={styles.subtitle}
+                >
+                  Tell us a bit about yourself to personalize your learning
+                  experience.
+                </AppText>
+              </View>
+
+              <View style={styles.formContainer}>
+                {/* Date of Birth Input */}
+                <View style={styles.inputGroup}>
+                  <AppText variant="body" font="semiBold" style={styles.label}>
+                    Date of Birth <AppText style={{color: LoginColors.textError}}>*</AppText>
+                  </AppText>
+                  <View style={styles.inputContainer}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="mm/dd/yyyy"
+                      placeholderTextColor={LoginColors.textTertiary}
+                      value={dateOfBirth}
+                      onChangeText={setDateOfBirth}
+                      editable={!isLoading}
+                      keyboardType="numeric"
+                    />
+                    <Image
+                      source={require('../../assets/icons/calendar.png')}
+                      style={styles.iconImage}
+                    />
+                  </View>
+                  {errors.dateOfBirth && (
+                    <AppText
+                      color="Error"
+                      variant="small"
+                      style={styles.errorText}
+                    >
+                      {errors.dateOfBirth}
+                    </AppText>
+                  )}
+                </View>
+
+                {/* School Name Input */}
+                <View style={styles.inputGroup}>
+                  <AppText variant="body" font="semiBold" style={styles.label}>
+                    Current School Name <AppText style={{color: LoginColors.textError}}>*</AppText>
+                  </AppText>
+                  <View style={styles.inputContainer}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Enter school name"
+                      placeholderTextColor={LoginColors.textTertiary}
+                      value={schoolName}
+                      onChangeText={setSchoolName}
+                      editable={!isLoading}
+                    />
+                    <Image
+                      source={require('../../assets/icons/school.png')}
+                      style={styles.iconImage}
+                    />
+                  </View>
+                  {errors.schoolName && (
+                    <AppText
+                      color="Error"
+                      variant="small"
+                      style={styles.errorText}
+                    >
+                      {errors.schoolName}
+                    </AppText>
+                  )}
+                </View>
+
+                {/* Grade and Board Row */}
+                <View style={styles.doubleInputRow}>
+                  <View style={[styles.doubleInputContainer, styles.inputGroup]}>
+                    <AppText
+                      variant="body"
+                      font="semiBold"
+                      style={styles.label}
+                    >
+                      Grade <AppText style={{color: LoginColors.textError}}>*</AppText>
+                    </AppText>
+                    <TouchableOpacity
+                      style={styles.inputContainer}
+                      onPress={() => setShowGradeDropdown(!showGradeDropdown)}
+                      disabled={isLoading}
+                    >
+                      <AppText
+                        style={[
+                          styles.input,
+                          !grade && { color: LoginColors.textTertiary },
+                        ]}
+                      >
+                        {grade || 'Class'}
+                      </AppText>
+                      <Image
+                        source={require('../../assets/icons/dropdown.png')}
+                        style={styles.selectIcon}
+                      />
+                    </TouchableOpacity>
+                    {errors.grade && (
+                      <AppText
+                        color="Error"
+                        variant="small"
+                        style={styles.errorText}
+                      >
+                        {errors.grade}
+                      </AppText>
+                    )}
+                  </View>
+
+                  <View style={[styles.doubleInputContainer, styles.inputGroup]}>
+                    <AppText
+                      variant="body"
+                      font="semiBold"
+                      style={styles.label}
+                    >
+                      Board <AppText style={{color: LoginColors.textError}}>*</AppText>
+                    </AppText>
+                    <TouchableOpacity
+                      style={styles.inputContainer}
+                      onPress={() => setShowBoardDropdown(!showBoardDropdown)}
+                      disabled={isLoading}
+                    >
+                      <AppText
+                        style={[
+                          styles.input,
+                          !board && { color: LoginColors.textTertiary },
+                        ]}
+                      >
+                        {board || 'Board'}
+                      </AppText>
+                      <Image
+                        source={require('../../assets/icons/dropdown.png')}
+                        style={styles.selectIcon}
+                      />
+                    </TouchableOpacity>
+                    {errors.board && (
+                      <AppText
+                        color="Error"
+                        variant="small"
+                        style={styles.errorText}
+                      >
+                        {errors.board}
+                      </AppText>
+                    )}
+                  </View>
+                </View>
+
+                {/* Grade Dropdown Modal */}
+                <Modal
+                  transparent={true}
+                  visible={showGradeDropdown}
+                  animationType="slide"
+                  onRequestClose={() => setShowGradeDropdown(false)}
+                >
+                  <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setShowGradeDropdown(false)}
+                  >
+                    <View style={styles.modalContent}>
+                      {grades.length === 0 ? (
+                        <View style={{padding: LoginSpacing.lg, alignItems: 'center'}}>
+                          <AppText>No grades available</AppText>
+                        </View>
+                      ) : (
+                        <FlatList
+                          data={grades}
+                          keyExtractor={(item, index) => `${item.id}-${index}`}
+                          scrollEnabled={true}
+                          renderItem={({ item }) => (
+                            <TouchableOpacity
+                              onPress={() => {
+                                console.log('🎓 Grade Selected:', item);
+                                setGrade(item.name);
+                                setGradeId(item.id);
+                                setShowGradeDropdown(false);
+                              }}
+                              style={styles.dropdownItem}
+                            >
+                              <AppText style={styles.dropdownItemText}>{item.name}</AppText>
+                            </TouchableOpacity>
+                          )}
+                        />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                </Modal>
+
+                {/* Board Dropdown Modal */}
+                <Modal
+                  transparent={true}
+                  visible={showBoardDropdown}
+                  animationType="slide"
+                  onRequestClose={() => setShowBoardDropdown(false)}
+                >
+                  <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setShowBoardDropdown(false)}
+                  >
+                    <View style={styles.modalContent}>
+                      {boards.length === 0 ? (
+                        <View style={{padding: LoginSpacing.lg, alignItems: 'center'}}>
+                          <AppText>No boards available</AppText>
+                        </View>
+                      ) : (
+                        <FlatList
+                          data={boards}
+                          keyExtractor={(item, index) => `${item.id}-${index}`}
+                          scrollEnabled={true}
+                          renderItem={({ item }) => (
+                            <TouchableOpacity
+                              onPress={() => {
+                                setBoard(item.code);
+                                setShowBoardDropdown(false);
+                              }}
+                              style={styles.dropdownItem}
+                            >
+                              <AppText style={styles.dropdownItemText}>{item.code} - {item.name}</AppText>
+                            </TouchableOpacity>
+                          )}
+                        />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                </Modal>
+
+                {/* State Dropdown */}
+                <View style={styles.inputGroup}>
+                  <AppText variant="body" font="semiBold" style={styles.label}>
+                    State <AppText style={{color: LoginColors.textError}}>*</AppText>
+                  </AppText>
+                  <TouchableOpacity
+                    style={styles.inputContainer}
+                    onPress={() => setShowStateDropdown(!showStateDropdown)}
+                    disabled={isLoading}
+                  >
+                    <AppText
+                      style={[
+                        styles.input,
+                        !state && { color: LoginColors.textTertiary },
+                      ]}
+                    >
+                      {state || 'Select State'}
+                    </AppText>
+                    <Image
+                      source={require('../../assets/icons/dropdown.png')}
+                      style={styles.selectIcon}
+                    />
+                  </TouchableOpacity>
+
+                  {/* State Dropdown Modal */}
+                  <Modal
+                    visible={showStateDropdown}
+                    transparent
+                    animationType="slide"
+                    onRequestClose={() => setShowStateDropdown(false)}
+                  >
+                    <TouchableOpacity
+                      style={styles.modalOverlay}
+                      activeOpacity={1}
+                      onPress={() => setShowStateDropdown(false)}
+                    >
+                      <View style={styles.modalContent}>
+                        {isLoadingMeta ? (
+                          <View style={{padding: LoginSpacing.lg, alignItems: 'center'}}>
+                            <AppText>Loading states...</AppText>
+                          </View>
+                        ) : states.length === 0 ? (
+                          <View style={{padding: LoginSpacing.lg, alignItems: 'center'}}>
+                            <AppText>No states available</AppText>
+                          </View>
+                        ) : (
+                          <FlatList
+                            data={states}
+                            keyExtractor={(item, index) => `${item.id}-${index}`}
+                            scrollEnabled={true}
+                            renderItem={({ item }) => (
+                              <TouchableOpacity
+                                style={styles.dropdownItem}
+                                onPress={() => {
+                                  setState(item.name);
+                                  setStateId(item.id);
+                                  setShowStateDropdown(false);
+                                }}
+                              >
+                                <AppText style={styles.dropdownItemText}>{item.name}</AppText>
+                              </TouchableOpacity>
+                            )}
+                          />
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  </Modal>
+
+                  {errors.state && (
+                    <AppText
+                      color="Error"
+                      variant="small"
+                      style={styles.errorText}
+                    >
+                      {errors.state}
+                    </AppText>
+                  )}
+                </View>
+
+                {/* District Dropdown */}
+                <View style={styles.inputGroup}>
+                  <AppText variant="body" font="semiBold" style={styles.label}>
+                    District <AppText style={{color: LoginColors.textError}}>*</AppText>
+                  </AppText>
+                  <TouchableOpacity
+                    style={styles.inputContainer}
+                    onPress={() => setShowDistrictDropdown(!showDistrictDropdown)}
+                  >
+                    <AppText
+                      style={[
+                        styles.input,
+                        !district && { color: LoginColors.textTertiary },
+                      ]}
+                    >
+                      {district || 'Select District'}
+                    </AppText>
+                    <Image
+                      source={require('../../assets/icons/dropdown.png')}
+                      style={styles.selectIcon}
+                    />
+                  </TouchableOpacity>
+
+                  {/* District Dropdown Modal */}
+                  <Modal
+                    visible={showDistrictDropdown}
+                    transparent
+                    animationType="slide"
+                    onRequestClose={() => setShowDistrictDropdown(false)}
+                  >
+                    <TouchableOpacity
+                      style={styles.modalOverlay}
+                      activeOpacity={1}
+                      onPress={() => setShowDistrictDropdown(false)}
+                    >
+                      <View style={styles.modalContent}>
+                        <FlatList
+                          scrollEnabled={true}
+                          data={isLoadingDistricts 
+                            ? [{id: 'loading', name: 'Loading districts...', isLoading: true}]
+                            : districts.length === 0 
+                            ? [{id: 'other', name: 'Other'}]
+                            : districts
+                          }
+                          keyExtractor={(item, index) => `${item.id}-${index}`}
+                          renderItem={({ item }) => (
+                            item.isLoading ? (
+                              <View style={{padding: LoginSpacing.lg, alignItems: 'center', justifyContent: 'center', height: 150}}>
+                                <ActivityIndicator size="large" color={LoginColors.primary} />
+                              </View>
+                            ) : (
+                              <TouchableOpacity
+                                style={styles.dropdownItem}
+                                onPress={() => {
+                                  setDistrict(item.name);
+                                  setDistrictId(item.id);
+                                  setShowDistrictDropdown(false);
+                                }}
+                              >
+                                <AppText style={styles.dropdownItemText}>{item.name}</AppText>
+                              </TouchableOpacity>
+                            )
+                          )}
+                        />
+                      </View>
+                    </TouchableOpacity>
+                  </Modal>
+
+                  {errors.district && (
+                    <AppText
+                      color="Error"
+                      variant="small"
+                      style={styles.errorText}
+                    >
+                      {errors.district}
+                    </AppText>
+                  )}
+                </View>
+
+                {/* Language Dropdown */}
+                <View style={styles.inputGroup}>
+                  <AppText variant="body" font="semiBold" style={styles.label}>
+                    Preferred Language <AppText style={{color: LoginColors.textError}}>*</AppText>
+                  </AppText>
+                  <TouchableOpacity
+                    style={styles.inputContainer}
+                    onPress={() => setShowLanguageDropdown(!showLanguageDropdown)}
+                    disabled={isLoading}
+                  >
+                    <AppText
+                      style={[
+                        styles.input,
+                        !language && { color: LoginColors.textTertiary },
+                      ]}
+                    >
+                      {language || 'Select Language'}
+                    </AppText>
+                    <Image
+                      source={require('../../assets/icons/dropdown.png')}
+                      style={styles.selectIcon}
+                    />
+                  </TouchableOpacity>
+                  {errors.language && (
+                    <AppText
+                      color="Error"
+                      variant="small"
+                      style={styles.errorText}
+                    >
+                      {errors.language}
+                    </AppText>
+                  )}
+                </View>
+
+                {/* Language Dropdown Modal */}
+                <Modal
+                  transparent={true}
+                  visible={showLanguageDropdown}
+                  animationType="slide"
+                  onRequestClose={() => setShowLanguageDropdown(false)}
+                >
+                  <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setShowLanguageDropdown(false)}
+                  >
+                    <View style={styles.modalContent}>
+                      {languages.length === 0 ? (
+                        <View style={{padding: LoginSpacing.lg, alignItems: 'center'}}>
+                          <AppText>No languages available</AppText>
+                        </View>
+                      ) : (
+                        <FlatList
+                          data={languages}
+                          keyExtractor={(item, index) => `${item.code}-${index}`}
+                          scrollEnabled={true}
+                          renderItem={({ item }) => (
+                            <TouchableOpacity
+                              onPress={() => {
+                                setLanguage(item.code || item.name);
+                                setShowLanguageDropdown(false);
+                              }}
+                              style={styles.dropdownItem}
+                            >
+                              <AppText style={styles.dropdownItemText}>{item.native_name || item.name}</AppText>
+                            </TouchableOpacity>
+                          )}
+                        />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                </Modal>
+
+                {/* Terms & Conditions */}
+                <View style={styles.checkboxSection}>
+                  <TouchableOpacity
+                    style={[
+                      styles.checkbox,
+                      termsAccepted && styles.checkboxChecked,
+                    ]}
+                    onPress={() => setTermsAccepted(!termsAccepted)}
+                    disabled={isLoading}
+                  >
+                    {termsAccepted && (
+                      <AppText
+                        style={{
+                          color: LoginColors.white,
+                          fontWeight: 'bold',
+                          fontSize: 12,
+                        }}
+                      >
+                        ✓
+                      </AppText>
+                    )}
+                  </TouchableOpacity>
+                  <AppText variant="body" color="Secondary" style={{flex: 1}}>
+                    I accept the{' '}
+                    <AppText variant="body" font="bold" style={styles.checkboxLink}>
+                      Terms & Conditions
+                    </AppText>{' '}
+                    and{' '}
+                    <AppText variant="body" font="bold" style={styles.checkboxLink}>
+                      Privacy Policy
+                    </AppText>.
+                  </AppText>
+                </View>
+
+                {errors.terms && (
+                  <AppText
+                    color="Error"
+                    variant="small"
+                    style={styles.errorText}
+                  >
+                    {errors.terms}
+                  </AppText>
+                )}
+              </View>
+            </>
+          )}
+        </ScrollView>
+
+        {/* Sticky Bottom Section - Step 1 */}
+        {currentStep === 1 && (
+          <View style={[styles.stickyBottomSection, { paddingHorizontal: LoginSpacing.screenPaddingHorizontal }]}>
+            {/* Next Step Button */}
+            <View style={styles.buttonContainer}>
+              <AppButton
+                title="Next Step →"
+                onPress={handleNextStep}
+                isLoading={isLoading}
+              />
+            </View>
+
+            {/* Already Have Account */}
+            <View style={styles.bottomSection}>
+              <AppText variant="body" color="Secondary">
+                Already have an account?{' '}
+              </AppText>
+              <TouchableOpacity onPress={onLoginPress} disabled={isLoading}>
+                <AppText variant="body" font="bold" style={styles.bottomLink}>
+                  Log In
+                </AppText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* Sticky Bottom Section - Step 2 */}
+        {currentStep === 2 && (
+          <View style={[styles.stickyBottomSection, { paddingHorizontal: LoginSpacing.screenPaddingHorizontal }]}>
+            {/* Complete Sign Up Button */}
+            <View style={styles.buttonContainer}>
+              <AppButton
+                title="Complete Sign Up ✓"
+                onPress={onSignUpPress}
+                isLoading={isLoading}
+              />
+            </View>
+
+            {/* Already Have Account */}
+            <View style={styles.bottomSection}>
+              <AppText variant="body" color="Secondary">
+                Already have an account?{' '}
+              </AppText>
+              <TouchableOpacity onPress={onLoginPress} disabled={isLoading}>
+                <AppText variant="body" font="bold" style={styles.bottomLink}>
+                  Log In
+                </AppText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </LinearGradient>
+    </KeyboardAvoidingView>
+  );
+};
+
+export default SignUpScreen;
+

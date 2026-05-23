@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+
+    <!-- Allow HTTP for Metro (debug only) -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- Keep your production domain secure -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">
+            pub-4186b3e0651e4e32b06361dafd94ccc4.r2.dev
+        </domain>
+    </domain-config>
+
+</network-security-config>
