@@ -351,6 +351,21 @@ const QuestionScreen = ({ route }) => {
           console.error('No options found for passageQuestion:', passageQuestion);
           return <Text style={styles.questionText}>Unable to load passage options</Text>;
         }
+
+        let passageQuestionImages = [];
+        if (passageQuestion.image_url) {
+          try {
+            passageQuestionImages = typeof passageQuestion.image_url === 'string'
+              ? JSON.parse(passageQuestion.image_url)
+              : Array.isArray(passageQuestion.image_url)
+                ? passageQuestion.image_url
+                : [];
+          } catch (err) {
+            console.error('Failed to parse passageQuestion.image_url:', err, passageQuestion.image_url);
+            passageQuestionImages = [];
+          }
+        }
+
         // Render passage text, then image (if any), then question, then options
         return (
           <View>
@@ -382,6 +397,43 @@ const QuestionScreen = ({ route }) => {
                 </TouchableOpacity>
               )}
             </View>
+            {passageQuestionImages.length > 0 && (
+              <View style={styles.questionImagesContainer}>
+                {passageQuestionImages.map((imageUrl, index) => {
+                  const imageHeight = imageDimensions[imageUrl] || 250;
+                  return (
+                    <TouchableOpacity
+                      key={`${imageUrl}-${index}`}
+                      activeOpacity={0.85}
+                      onPress={() => openFullScreenImage(passageQuestionImages, index)}
+                    >
+                      <Image
+                        source={{ uri: imageUrl }}
+                        style={{
+                          width: '100%',
+                          height: imageHeight,
+                          borderRadius: 12,
+                          marginBottom: index < passageQuestionImages.length - 1 ? 12 : 0,
+                          backgroundColor: '#f0f0f0',
+                        }}
+                        resizeMode="contain"
+                        onLoad={(e) => {
+                          const { width: imgWidth, height: imgHeight } = e.nativeEvent.source;
+                          const calculatedHeight = (imgHeight / imgWidth) * (contentWidth - 20);
+                          setImageDimensions(prev => ({
+                            ...prev,
+                            [imageUrl]: calculatedHeight,
+                          }));
+                        }}
+                        onError={(error) => {
+                          console.error('Failed to load passage question image:', imageUrl, error);
+                        }}
+                      />
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
             <View style={styles.questionTextContainer}>
               <LessonContentRenderer
                 content={passageQuestion.text}
