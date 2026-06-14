@@ -16,6 +16,7 @@ import {
   Alert,
   ActivityIndicator,
   useWindowDimensions,
+  BackHandler,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import COLORS from '../../config/colors';
@@ -53,7 +54,7 @@ const QuestionScreen = ({ route }) => {
   const [savingAnswer, setSavingAnswer] = useState(false);
   const [submittingTest, setSubmittingTest] = useState(false);
   const [showFinishModal, setShowFinishModal] = useState(false);
-  // Removed loadingItem state
+  const [loadingQuestion, setLoadingQuestion] = useState(true);
   const [playItem, setPlayItem] = useState(null); // Holds the current play item (question or passage)
   const [lastOrder, setLastOrder] = useState(null); // For stuck detection
   const [imageDimensions, setImageDimensions] = useState({});
@@ -83,8 +84,8 @@ const QuestionScreen = ({ route }) => {
   // Load the first play item on mount
   useEffect(() => {
     const loadFirstItem = async () => {
+      setLoadingQuestion(true);
       try {
-        // Removed loadingItem
         const data = await fetchFirstPlayItem(testId);
         setPlayItem(data.item);
         setCurrentOrder(data.item.order);
@@ -95,7 +96,7 @@ const QuestionScreen = ({ route }) => {
         console.error('Failed to load first play item:', err);
         setPlayItem(null);
       } finally {
-        // Removed loadingItem
+        setLoadingQuestion(false);
       }
     };
     if (testId) loadFirstItem();
@@ -144,6 +145,17 @@ const QuestionScreen = ({ route }) => {
     return () => clearInterval(timer);
   }, []);
 
+  // Handle Android back button
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      // Show exit confirmation modal instead of going back
+      setShowExitModal(true);
+      return true; // Prevent default back behavior
+    });
+
+    return () => backHandler.remove();
+  }, []);
+
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -170,10 +182,13 @@ const QuestionScreen = ({ route }) => {
 
   // Handler for Next (when answered)
   const handleNext = async () => {
-    if (currentOrder === totalQuestions) {
-      setShowFinishModal(true);
+    if (!playItem || currentOrder === null || loadingQuestion || currentOrder === totalQuestions) {
+      if (currentOrder === totalQuestions) {
+        setShowFinishModal(true);
+      }
       return;
     }
+
     // Save current answer if one is selected and item is a question or passage
     if (selectedAnswer && attemptId && playItem) {
       let questionId = null;
@@ -201,7 +216,8 @@ const QuestionScreen = ({ route }) => {
         }
       }
     }
-    // Fetch next play item (increment currentOrder for pagination)
+
+    setLoadingQuestion(true);
     try {
       setSelectedAnswer(null);
       const data = await fetchNextPlayItem(testId, currentOrder);
@@ -227,15 +243,21 @@ const QuestionScreen = ({ route }) => {
       }
     } catch (err) {
       console.error('Failed to load next play item:', err);
+    } finally {
+      setLoadingQuestion(false);
     }
   };
 
   // Handler for Skip (when not answered)
   const handleSkip = async () => {
-    if (currentOrder === totalQuestions) {
-      setShowFinishModal(true);
+    if (!playItem || currentOrder === null || loadingQuestion || currentOrder === totalQuestions) {
+      if (currentOrder === totalQuestions) {
+        setShowFinishModal(true);
+      }
       return;
     }
+
+    setLoadingQuestion(true);
     try {
       setSelectedAnswer(null);
       const data = await fetchNextPlayItem(testId, currentOrder);
@@ -261,6 +283,8 @@ const QuestionScreen = ({ route }) => {
       }
     } catch (err) {
       console.error('Failed to load next play item:', err);
+    } finally {
+      setLoadingQuestion(false);
     }
   };
 
@@ -306,7 +330,11 @@ const QuestionScreen = ({ route }) => {
   };
 
   const handlePrevious = async () => {
-    // Fetch previous play item
+    if (!playItem || currentOrder === null || loadingQuestion || currentOrder === 1) {
+      return;
+    }
+
+    setLoadingQuestion(true);
     try {
       const data = await fetchPrevPlayItem(testId, currentOrder);
       if (data && data.item) {
@@ -316,6 +344,8 @@ const QuestionScreen = ({ route }) => {
       }
     } catch (err) {
       console.error('Failed to load previous play item:', err);
+    } finally {
+      setLoadingQuestion(false);
     }
   };
 
@@ -651,13 +681,22 @@ const QuestionScreen = ({ route }) => {
         </Text>
 
         {/* Right: Exit Button */}
-        <TouchableOpacity
-          style={styles.exitButton}
-          onPress={handleExit}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Text style={styles.exitButtonText}>Exit</Text>
-        </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <TouchableOpacity
+              style={[styles.exitButton, { marginRight: 8 }]}
+              onPress={() => navigation.navigate('TestIndex', { testId })}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text style={styles.exitButtonText}>Index</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.exitButton}
+              onPress={handleExit}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text style={styles.exitButtonText}>Exit</Text>
+            </TouchableOpacity>
+          </View>
       </View>
 
       {/* Question Content */}
@@ -701,10 +740,10 @@ const QuestionScreen = ({ route }) => {
           style={[
             styles.navButton,
             styles.previousButton,
-            (currentOrder === 1 || savingAnswer || submittingTest) && styles.navButtonDisabled,
+            (!playItem || currentOrder === null || currentOrder === 1 || savingAnswer || submittingTest || loadingQuestion) && styles.navButtonDisabled,
           ]}
           onPress={handlePrevious}
-          disabled={currentOrder === 1 || savingAnswer || submittingTest}
+          disabled={!playItem || currentOrder === null || currentOrder === 1 || savingAnswer || submittingTest || loadingQuestion}
           activeOpacity={0.7}
         >
           <Text style={styles.navButtonText}>Previous</Text>
@@ -715,10 +754,10 @@ const QuestionScreen = ({ route }) => {
             style={[
               styles.navButton,
               styles.nextButton,
-              submittingTest && styles.navButtonDisabled,
+              (!playItem || currentOrder === null || submittingTest || loadingQuestion) && styles.navButtonDisabled,
             ]}
             onPress={() => setShowFinishModal(true)}
-            disabled={submittingTest}
+            disabled={!playItem || currentOrder === null || submittingTest || loadingQuestion}
             activeOpacity={0.8}
           >
             <Text style={styles.nextButtonText}>Finish Test</Text>
@@ -729,10 +768,10 @@ const QuestionScreen = ({ route }) => {
               style={[
                 styles.navButton,
                 styles.nextButton,
-                submittingTest && styles.navButtonDisabled,
+                (!playItem || currentOrder === null || submittingTest || loadingQuestion) && styles.navButtonDisabled,
               ]}
               onPress={handleNext}
-              disabled={submittingTest}
+              disabled={!playItem || currentOrder === null || submittingTest || loadingQuestion}
               activeOpacity={0.8}
             >
               <Text style={styles.nextButtonText}>Next</Text>
@@ -742,10 +781,10 @@ const QuestionScreen = ({ route }) => {
               style={[
                 styles.navButton,
                 styles.nextButton,
-                submittingTest && styles.navButtonDisabled,
+                (!playItem || currentOrder === null || submittingTest || loadingQuestion) && styles.navButtonDisabled,
               ]}
               onPress={handleSkip}
-              disabled={submittingTest}
+              disabled={!playItem || currentOrder === null || submittingTest || loadingQuestion}
               activeOpacity={0.8}
             >
               <Text style={styles.nextButtonText}>Skip</Text>

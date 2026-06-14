@@ -50,14 +50,14 @@ const TaskIcon = ({ type = 'lesson', status = 'pending' }) => {
 
 const styles = StyleSheet.create({
   iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 64,
+    height: 64,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
   emoji: {
-    fontSize: 22,
+    fontSize: 30,
   },
   lessonIcon: {
     backgroundColor: '#DBEAFE', // Light blue
