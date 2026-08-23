@@ -10,6 +10,7 @@ import { getStoredToken, removeStoredToken } from '../services/storageService';
 import { showErrorMessage } from '../utils/logger';
 import { logApiRequest, logApiResponse, logApiError } from './apiLogger';
 
+
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: API_TIMEOUT,
