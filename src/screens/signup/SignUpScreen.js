@@ -97,61 +97,77 @@ const SignUpScreen = ({ navigation }) => {
   const validateCompleteForm = () => {
     const newErrors = {};
 
+    // Full Name
     if (!name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = 'Please enter your full name.';
     }
 
+    // Email
     if (!email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = 'Please enter your email address.';
     } else if (!isValidEmail(email)) {
-      newErrors.email = 'Please enter a valid email';
+      newErrors.email = 'Please enter a valid email address.';
     }
 
+    // Password
     if (!password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = 'Please create a password.';
     } else if (password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = 'Password must be at least 6 characters long.';
     }
 
+    // Mobile Number (Optional)
     if (mobileNumber && !isValidPhoneNumber(mobileNumber)) {
-      newErrors.mobileNumber = 'Please enter a valid 10-digit mobile number';
+      newErrors.mobileNumber =
+        'Please enter a valid 10-digit mobile number.';
     }
 
+    // Date of Birth
     if (!dateOfBirth.trim()) {
-      newErrors.dateOfBirth = 'Date of birth is required';
+      newErrors.dateOfBirth = 'Please select your date of birth.';
     }
 
+    // School Name
     if (!schoolName.trim()) {
-      newErrors.schoolName = 'School name is required';
+      newErrors.schoolName = 'Please enter your school name.';
     }
 
+    // Grade
     if (!grade.trim()) {
-      newErrors.grade = 'Grade is required';
+      newErrors.grade = 'Please select your grade.';
     }
 
+    // Board
     if (!board.trim()) {
-      newErrors.board = 'Board is required';
+      newErrors.board = 'Please select your education board.';
     }
 
+    // State
     if (!state.trim()) {
-      newErrors.state = 'State is required';
+      newErrors.state = 'Please select your state.';
     }
 
+    // District
     if (!district.trim()) {
-      newErrors.district = 'District is required';
+      newErrors.district = 'Please select your district.';
     }
 
+    // Preferred Language
     if (!language.trim()) {
-      newErrors.language = 'Language is required';
+      newErrors.language = 'Please select your preferred language.';
     }
 
+    // Terms & Conditions
     if (!termsAccepted) {
-      newErrors.terms = 'You must accept Terms & Conditions';
+      newErrors.terms =
+        'Please accept the Terms & Conditions to continue.';
     }
 
-    return { errors: newErrors, isValid: Object.keys(newErrors).length === 0 };
+    return {
+      errors: newErrors,
+      isValid: Object.keys(newErrors).length === 0,
+    };
   };
-
   /**
    * Validate email format
    */
@@ -179,7 +195,7 @@ const SignUpScreen = ({ navigation }) => {
 
     if (!validation.isValid) {
       const firstError = Object.values(validation.errors)[0];
-      Alert.alert('Validation Error', firstError, [{ text: 'OK' }]);
+      Alert.alert('', firstError, [{ text: 'OK' }]);
       return;
     }
 
@@ -669,12 +685,11 @@ const SignUpScreen = ({ navigation }) => {
                     color: COLORS.TEXT_PRIMARY,
                     padding: 0,
                   }}
-                  placeholder="mm/dd/yyyy"
+                  placeholder="dd/mm/yyyy"
                   placeholderTextColor="#d1d5db"
                   value={dateOfBirth}
                   onChangeText={setDateOfBirth}
                   editable={!isLoading}
-                  keyboardType="numeric"
                 />
               </View>
               {errors.dateOfBirth && (

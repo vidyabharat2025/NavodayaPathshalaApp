@@ -8,7 +8,7 @@
 // const API_BASE_URL = 'http://192.168.1.62:8080'; // Change this to your actual API base URL
 // const API_BASE_URL = 'https://navodaya-backend-sez5.onrender.com'; // Change this to your actual API base URL
 const API_TIMEOUT = 60000; // 60 seconds
-const API_BASE_URL = 'https://mental-meta-vidyabharat-6f47efdb.koyeb.app'; // Change this to your actual API base URL
+const API_BASE_URL = 'https://staging-api.vidyabharat.online'; // Change this to your actual API base URL
 
 /**
  * API Endpoints

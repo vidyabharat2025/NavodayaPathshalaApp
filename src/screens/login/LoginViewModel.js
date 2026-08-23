@@ -11,8 +11,8 @@ import { validateEmailOrMobile, validateRequired } from '../../utils/validators'
 
 const LoginViewModel = () => {
   // State - Prefilled with test credentials for faster transit (will revert later)
-  const [userName, setUserName] = useState('9067067895');
-  const [password, setPassword] = useState('pwd1234');
+  const [userName, setUserName] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);

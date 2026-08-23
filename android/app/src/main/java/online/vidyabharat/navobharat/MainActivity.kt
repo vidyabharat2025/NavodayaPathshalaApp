@@ -1,4 +1,4 @@
-package com.navodayapathshalaapp
+package online.vidyabharat.navobharat
 
 import android.os.Bundle
 import com.facebook.react.ReactActivity

@@ -112,7 +112,7 @@ const LoginScreen = ({ navigation }) => {
             fontFamily: FONTS.FAMILY.BOLD,
             color: '#4f46e5',
             marginBottom: 4,
-          }}>Navodaya Pathshala</AppText>
+          }}>Navo Bharat</AppText>
           <AppText style={{
             fontSize: 12,
             fontFamily: FONTS.FAMILY.REGULAR,
@@ -277,26 +277,6 @@ const LoginScreen = ({ navigation }) => {
                 fontFamily: FONTS.FAMILY.SEMI_BOLD,
                 color: '#4f46e5',
               }}>Forgot Password?</AppText>
-            </TouchableOpacity>
-
-            <AppText style={{
-                fontSize: 16,
-                fontFamily: FONTS.FAMILY.BOLD_ITALIC,
-                color: '#000',
-                textAlign: 'center',
-              }}>OR</AppText>
-             {/* Login with OTP Link */}
-            <TouchableOpacity
-              onPress={onLoginWithOTPPress}
-              disabled={isLoading}
-              style={{ marginBottom: 0, marginTop: 16, paddingVertical: 8, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#4f46e5', borderRadius: 8 }}
-            >
-              <AppText style={{
-                fontSize: 13,
-                fontFamily: FONTS.FAMILY.BOLD,
-                color: '#4f46e5',
-                textAlign: 'center',
-              }}>Login with OTP</AppText>
             </TouchableOpacity>
 
           </View>
